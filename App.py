@@ -59,7 +59,6 @@ if uploaded_file is not None:
         return activite in ["ASSURANCE", "BANQUE", "BATIMENT TRAVAUX PUBLICS", "FINANCES", "HOTELLERIE", "IMMOBILIER", "PRESTATION DE SERVICE", "TELECOMMUNICATION", "TOURISTIQUE", "TRANSPORT"]
 
     # Fonctions pour le calcul des indicateurs financiers
-    # Fonctions pour le calcul des indicateurs financiers
     def calcul_ecart_ir_tva(row):
         if est_vente_de_biens(row['Activite']):
             return abs(row['CA_IR'] - row['CA_TVA'])
@@ -163,6 +162,7 @@ if uploaded_file is not None:
         file_name='donnees_traitees.csv',
         mime='text/csv'
     )
+
     # Régression linéaire
     try:
         # Sélection des colonnes pour X et y
@@ -206,15 +206,7 @@ if uploaded_file is not None:
             plt.figure(figsize=(10, 6))
             plt.scatter(X_cleaned.iloc[:, 0], y_cleaned, color='blue', label='Données réelles')
             plt.scatter(X_cleaned.iloc[:, 0], predictions, color='orange', label='Prédictions')
-            plt.title('Régression Linéaire')
-            plt.xlabel(X_cleaned.columns[0])
-            plt.ylabel('Montant redressement principal')
-            plt.legend()
-            st.pyplot(plt)
-            
-            # Ajouter la ligne de régression
             plt.plot(X_cleaned.iloc[:, 0], predictions, color='green', label='Ligne de régression', linewidth=2)
-
             plt.title('Régression Linéaire')
             plt.xlabel(X_cleaned.columns[0])
             plt.ylabel('Montant redressement principal')
@@ -226,7 +218,7 @@ if uploaded_file is not None:
 
 
 # Ajout d'un nouvel upload pour un fichier avec de nouvelles features
-uploaded_new_file = st.file_uploader("Importez un fichier avec de nouvelles features pour prédire la target", type=["xlsx", "xls", "csv"])
+uploaded_new_file = st.file_uploader("Importez un fichier avec de nouvelles features pour prédire le Montant_redressement_principal", type=["xlsx", "xls", "csv"])
 
 if uploaded_new_file is not None:
     # Récupération de l'extension de fichier
@@ -249,14 +241,30 @@ if uploaded_new_file is not None:
     for col in colonnes_a_convertir:
         new_df[col] = pd.to_numeric(new_df[col], errors='coerce').fillna(0)
 
-    # Supposons que 'Nouvelle_Target' soit la colonne à prédire
-    # Assurez-vous de sélectionner uniquement les features nécessaires pour la prédiction
-    X_new = new_df.drop(columns=['Nouvelle_Target'], errors='ignore')  # Retirer d'autres colonnes si nécessaire
+    # Application des mêmes calculs d'indicateurs pour le nouveau fichier
+    new_df['Ecart_IR_TVA'] = new_df.apply(calcul_ecart_ir_tva, axis=1)
+    new_df['Indicateur_IR_TVA'] = new_df.apply(calcul_indicateur_ir_tva, axis=1)
+    new_df['Indicateur_Exportation'] = new_df.apply(calcul_indicateur_exportation, axis=1)
+    new_df['Indicateur_Operation_Locale'] = new_df.apply(calcul_indicateur_operation_locale, axis=1)
+    new_df['Indicateur_DCOM'] = new_df.apply(calcul_ecart_dcom, axis=1)
+    new_df['Indicateur_Achat_Majore'] = new_df.apply(calcul_ecart_achat_majore, axis=1)
+    new_df['Indicateur_TVA_Deductible_Local'] = new_df.apply(calcul_ecart_tva_deductible_local, axis=1)
+    new_df['Indicateur_TVA_Import_Biens'] = new_df.apply(calcul_ecart_tva_import_biens, axis=1)
+    new_df['Indicateur_TVA_Import_Services'] = new_df.apply(calcul_ecart_tva_import_services, axis=1)
+    new_df['Indicateur_Correspondance_TVAI_IRI'] = new_df.apply(calcul_correspondance_tvai_iri, axis=1)
+    new_df['Indicateur_TVA_Collectee_Locale'] = new_df.apply(calcul_ecart_tva_collectee_locale, axis=1)
+    new_df['Indicateur_Permanence_Credit_TVA'] = new_df.apply(calcul_permanence_credit_tva, axis=1)
+    new_df['Indicateur_Poids_Impôt'] = new_df.apply(calcul_poids_impot, axis=1)
+    new_df['Indicateur_Ecart_Etats_Financiers_DCOM'] = new_df.apply(calcul_ecart_etats_financiers_dcom, axis=1)
+    new_df['Indicateur_Permanence_Déficit_IR'] = new_df.apply(calcul_permanence_deficit_ir, axis=1)
+
+    # Supposer que 'Nouvelle_Target' n'existe pas et que nous la prédisons
+    X_new = new_df.drop(columns=['Montant_redressement_principal'], errors='ignore')
 
     # Effectuer des prédictions
     try:
         nouvelles_predictions = model.predict(X_new)
-        new_df['Prédictions'] = nouvelles_predictions
+        new_df['Montant_redressement_principal'] = nouvelles_predictions
         
         # Affichage des résultats
         st.subheader("Résultats des Prédictions")
@@ -272,12 +280,10 @@ if uploaded_new_file is not None:
 
     except Exception as e:
         st.error(f"Une erreur s'est produite lors de la prédiction : {e}")
-        
-        
-#theme
 
+
+# Thème
 hide_st_style= """
-
 <style>
 #MenuPricipale {visibility: hidden;}
 footer {visibility: hidden;}
