@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+import plotly.express as px
 
 # Configuration de la page Streamlit
 st.set_page_config(page_title="ANALYSE_DE_DONNEES", layout="wide")
@@ -213,6 +214,32 @@ if uploaded_file is not None:
             plt.legend()
             st.pyplot(plt)
 
+            # Ajout d'un graphique de lignes
+            # Création d'un DataFrame pour le graphique de lignes
+            # Assurez-vous que les colonnes sont toutes numériques
+            data_for_line_chart = df[['Montant_redressement_principal', 'CA_IR', 'CA_TVA']].copy()
+
+            # Conversion des colonnes en numérique, si nécessaire
+            data_for_line_chart['Montant_redressement_principal'] = pd.to_numeric(data_for_line_chart['Montant_redressement_principal'], errors='coerce')
+            data_for_line_chart['CA_IR'] = pd.to_numeric(data_for_line_chart['CA_IR'], errors='coerce')
+            data_for_line_chart['CA_TVA'] = pd.to_numeric(data_for_line_chart['CA_TVA'], errors='coerce')
+
+            # Supprimer les lignes avec des valeurs NaN
+            data_for_line_chart = data_for_line_chart.dropna()
+
+            # Ajout d'une colonne d'index pour l'axe x
+            data_for_line_chart['Index'] = data_for_line_chart.index  # Ajout d'une colonne d'index pour l'axe x
+
+            # Utilisation de plotly express pour créer un graphique de lignes
+            line_chart = px.line(data_for_line_chart, x='Index',
+                                y=['Montant_redressement_principal', 'CA_IR', 'CA_TVA'],
+                                title='Comparaison des Indicateurs Financiers',
+                                labels={'value': 'Montant', 'Index': 'Index'},
+                                markers=True)
+
+            # Affichage du graphique de ligne dans Streamlit
+            st.plotly_chart(line_chart)
+
     except Exception as e:
         st.error(f"Une erreur s'est produite lors de la régression : {e}")
 
@@ -280,7 +307,6 @@ if uploaded_new_file is not None:
 
     except Exception as e:
         st.error(f"Une erreur s'est produite lors de la prédiction : {e}")
-
 
 # Thème
 hide_st_style= """
